@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="KumoPlay — anime discovery with a multi-source player for authorised video streams.">
+<title>KumoPlay</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0b0c10; color: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; padding-bottom: 75px; }
+  header { position: sticky; top: 0; z-index: 20; background: #12141c; border-bottom: 1px solid #252938; padding: 10px 12px; display: flex; gap: 8px; align-items: center; }
+  .logo { font-size: 19px; font-weight: 900; color: #fff; flex-shrink: 0; cursor: pointer; }
+  .logo span { color: #8b5cf6; }
+  .search { display: flex; flex: 1; }
+  .search input { flex: 1; min-width: 0; background: #191c26; border: 1px solid #252938; border-right: none; color: #fff; padding: 8px 10px; border-radius: 8px 0 0 8px; font-size: 16px; outline: none; }
+  .search button { background: #8b5cf6; color: #fff; border: none; padding: 0 14px; border-radius: 0 8px 8px 0; font-weight: 700; cursor: pointer; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 12px; }
+  .hero { background: #14161f; border: 1px solid #252938; border-radius: 12px; padding: 12px; margin-bottom: 16px; display: flex; gap: 12px; align-items: center; }
+  .hero img { width: 85px; height: 120px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+  .hero h2 { font-size: 16px; margin-bottom: 4px; }
+  .hero p { font-size: 12px; color: #9ca3af; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 8px; }
+
+  .cw-wrap { margin-bottom: 18px; }
+  .cw-head { font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .cw-head::before { content: ''; width: 4px; height: 14px; background: #8b5cf6; border-radius: 4px; }
+  .cw-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+  .cw-row::-webkit-scrollbar { display: none; }
+  .cw-card { width: 215px; flex-shrink: 0; background: #14161f; border: 1px solid #252938; border-radius: 10px; overflow: hidden; display: flex; gap: 10px; padding: 8px; cursor: pointer; align-items: center; }
+  .cw-card img { width: 52px; height: 74px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+  .cw-info { flex: 1; min-width: 0; }
+  .cw-title { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+  .cw-sub { font-size: 11px; color: #c4b5fd; font-weight: 700; margin-bottom: 6px; }
+  .prog-bg { width: 100%; height: 4px; background: #252938; border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+  .prog-fill { height: 100%; background: #8b5cf6; }
+  .plus-btn { background: #191c26; border: 1px solid #252938; color: #fff; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 5px; cursor: pointer; }
+
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { background: #14161f; border: 1px solid #252938; color: #9ca3af; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+  .chip.active { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; }
+  .card { background: #14161f; border: 1px solid #252938; border-radius: 10px; overflow: hidden; cursor: pointer; }
+  .poster { position: relative; aspect-ratio: 2/3; background: #111; }
+  .poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .badge { position: absolute; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.85); }
+  .b-tl { top: 6px; left: 6px; color: #e5e7eb; }
+  .b-top { top: 6px; right: 6px; color: #fbbf24; }
+  .b-row { position: absolute; bottom: 6px; left: 6px; right: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .pill { font-size: 9.5px; font-weight: 800; padding: 2px 5px; border-radius: 4px; letter-spacing: 0.2px; }
+  .p-sub { background: rgba(34, 197, 94, 0.92); color: #052e16; }
+  .p-dub { background: rgba(59, 130, 246, 0.92); color: #fff; }
+  .p-ep { background: #8b5cf6; color: #fff; margin-left: auto; }
+  .c-body { padding: 8px; }
+  .c-title { font-size: 12.5px; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .bnav { position: fixed; bottom: 0; left: 0; right: 0; background: #12141c; border-top: 1px solid #252938; display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 0; z-index: 30; }
+  .bnav button { background: none; border: none; color: #9ca3af; font-size: 13px; font-weight: 700; padding: 4px; cursor: pointer; }
+  .bnav button.active { color: #a78bfa; }
+  .btn { background: #8b5cf6; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 12px; }
+  .m-box { background: #14161f; border: 1px solid #252938; border-radius: 14px; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; padding: 14px; }
+  .vid { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; margin: 10px 0; }
+  .vid iframe { width: 100%; height: 100%; border: none; }
+  .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 6px; max-height: 150px; overflow-y: auto; margin-top: 10px; }
+  .watch-tools { background:#10121a; border:1px solid #252938; border-radius:10px; padding:12px; margin:12px 0; }
+  .watch-tools h4 { font-size:14px; margin-bottom:6px; }
+  .watch-tools p,.streaming-status { color:#9ca3af; font-size:11.5px; line-height:1.5; margin-bottom:9px; }
+  .url-row { display:flex; gap:6px; margin-top:10px; }
+  .url-row input { flex:1; min-width:0; background:#191c26; border:1px solid #343849; color:#fff; padding:8px; border-radius:7px; }
+  #episode-player { width:100%; max-height:300px; margin-top:10px; background:#000; border-radius:8px; }
+  .ep-btn { background: #191c26; border: 1px solid #252938; color: #fff; padding: 7px 0; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .ep-btn.done { background: #8b5cf6; border-color: #8b5cf6; }
+  .watch-tools { margin: 12px 0; padding: 10px; background: #10121a; border: 1px solid #252938; border-radius: 9px; }
+  .watch-tools h4 { font-size: 13px; margin-bottom: 7px; }
+  .watch-tools p { color: #9ca3af; font-size: 11px; line-height: 1.45; margin-bottom: 8px; }
+  .url-row { display: flex; gap: 6px; }
+  .url-row input { min-width: 0; flex: 1; background: #191c26; border: 1px solid #34394b; color: #fff; padding: 8px; border-radius: 7px; font-size: 12px; }
+  .watch-tools label { cursor:pointer; }
+  #episode-player { width: 100%; display: block; background: #000; border-radius: 8px; margin-top: 9px; max-height: 300px; }
+  .hidden { display: none !important; }
+  .poster.fallback-poster { display:flex; align-items:center; justify-content:center; padding:12px; text-align:center; background:linear-gradient(145deg,#25164a,#111827 58%,#3b1d55); }
+  .poster.fallback-poster strong { font-size:17px; line-height:1.15; color:#fff; text-shadow:0 2px 8px #000; }
+  .notice { background:#211b35; border:1px solid #49347a; color:#ddd6fe; padding:10px 12px; border-radius:9px; font-size:12px; line-height:1.45; margin:8px 0 12px; }
+  .official-watch { background:#171323; border:1px solid #49347a; border-radius:10px; padding:11px; margin:10px 0; }
+  .official-watch h4 { font-size:13px; margin-bottom:5px; }
+  .official-watch p { color:#c4b5fd; font-size:11px; line-height:1.45; margin-bottom:9px; }
+  .provider-links { display:flex; gap:7px; flex-wrap:wrap; }
+  .provider-links a { display:inline-block; color:#fff; background:#282039; border:1px solid #554078; border-radius:7px; padding:8px 10px; font-size:11px; font-weight:700; text-decoration:none; }
+  .provider-links a:focus,.provider-links a:hover { background:#49347a; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" onclick="go('home')">Kumo<span>Play</span></div>
+  <form class="search" onsubmit="searchGo(event)">
+    <input id="q" type="search" placeholder="Search anime...">
+    <button type="submit">Go</button>
+  </form>
+</header>
+
+<div class="wrap">
+  <div id="hero" class="hero hidden">
+    <img id="h-img" src="" alt="">
+    <div>
+      <h2 id="h-title"></h2>
+      <p id="h-desc"></p>
+      <button id="h-btn" class="btn">Watch &amp; Episodes</button>
+    </div>
+  </div>
+
+  <div id="cw-section" class="cw-wrap hidden">
+    <div class="cw-head">Continue Watching</div>
+    <div id="cw-row" class="cw-row"></div>
+  </div>
+
+  <div id="chips" class="chips">
+    <button class="chip active" onclick="loadList('/top/anime?filter=airing&limit=24', 'Trending', this)">Trending</button>
+    <button class="chip" onclick="loadList('/seasons/now?limit=24', 'This Season', this)">This Season</button>
+    <button class="chip" onclick="loadList('/top/anime?filter=bypopularity&limit=24', 'Popular', this)">Popular</button>
+    <button class="chip" onclick="loadList('/anime?genres=1&order_by=score&sort=desc&limit=24', 'Action', this)">Action</button>
+    <button class="chip" onclick="loadList('/anime?genres=10&order_by=score&sort=desc&limit=24', 'Fantasy', this)">Fantasy</button>
+    <button class="chip" onclick="loadList('/anime?genres=22&order_by=score&sort=desc&limit=24', 'Romance', this)">Romance</button>
+  </div>
+
+  <div id="days" class="chips hidden">
+    <button class="chip active" onclick="loadSched('monday', this)">Mon</button>
+    <button class="chip" onclick="loadSched('tuesday', this)">Tue</button>
+    <button class="chip" onclick="loadSched('wednesday', this)">Wed</button>
+    <button class="chip" onclick="loadSched('thursday', this)">Thu</button>
+    <button class="chip" onclick="loadSched('friday', this)">Fri</button>
+    <button class="chip" onclick="loadSched('saturday', this)">Sat</button>
+    <button class="chip" onclick="loadSched('sunday', this)">Sun</button>
+  </div>
+
+  <div id="notice" class="notice hidden"></div>
+  <p id="msg" style="font-size:13px; color:#9ca3af; margin-bottom:10px;">Trending</p>
+  <div id="grid" class="grid"></div>
+  <button id="load-more" class="btn hidden" style="display:block;margin:16px auto 24px;padding:11px 22px;" onclick="loadMoreAnime()">Load more anime</button>
+</div>
+
+<nav class="bnav">
+  <button id="n-home" class="active" onclick="go('home')">Home</button>
+  <button id="n-sched" onclick="go('sched')">Schedule</button>
+  <button id="n-list" onclick="go('list')">My List (<span id="cnt">0</span>)</button>
+</nav>
+
+<div id="modal" class="modal hidden" onclick="closeM()">
+  <div class="m-box" onclick="event.stopPropagation()">
+    <div style="display:flex; justify-content:space-between; gap:8px;">
+      <h3 id="m-title" style="font-size:16px;"></h3>
+      <button onclick="closeM()" style="background:none; border:none; color:#fff; font-size:24px; line-height:1; cursor:pointer;">&times;</button>
+    </div>
+    <div id="m-vid" class="vid hidden"><iframe id="m-frame" allowfullscreen></iframe></div>
+    <p id="m-desc" style="font-size:12.5px; color:#9ca3af; line-height:1.5; margin:8px 0 12px;"></p>
+    <section class="official-watch" aria-label="Official streaming services">
+      <h4>Free, legal episodes (UK)</h4>
+      <p>Start with free services and official rights-holder channels. Tubi has a UK anime catalogue with full series and films; YouTube availability depends on the official channel and region. These links open the provider so you can play the actual episode there.</p>
+      <div id="provider-links" class="provider-links"></div>
+    </section>
+    <div class="watch-tools">
+      <h4>Optional personal video player</h4>
+      <p>You can play a video file you own or a direct stream you are authorised to use. KumoPlay cannot extract episodes from Tubi or other protected streaming apps, and DRM-protected streams cannot be embedded.</p>
+      <div id="source-list" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:6px;margin-top:8px;">
+        <input id="source-name" type="text" placeholder="Server name (e.g. Server 1)" style="min-width:0;background:#191c26;border:1px solid #343849;color:#fff;padding:8px;border-radius:7px;">
+        <select id="source-type" style="min-width:0;background:#191c26;border:1px solid #343849;color:#fff;padding:8px;border-radius:7px;">
+          <option value="media">MP4 / WebM</option><option value="hls">HLS stream (.m3u8)</option><option value="embed">Permitted embed page</option>
+        </select>
+      </div>
+      <div class="url-row">
+        <input id="source-url" type="url" placeholder="Paste authorised source URL">
+        <button id="add-source" class="btn" type="button">Add source</button>
+      </div>
+      <label for="video-file" class="btn" style="display:inline-block; margin:2px 0 8px;">Choose video from device</label>
+      <input id="video-file" type="file" accept="video/*" style="display:block; width:100%; color:#cbd5e1; font-size:12px; margin-bottom:10px;">
+      <div class="url-row">
+        <input id="video-url" type="url" placeholder="Paste a direct MP4 / WebM video URL">
+        <button id="play-url" class="btn" type="button">Play</button>
+      </div>
+      <video id="episode-player" controls playsinline crossorigin="anonymous" class="hidden"></video>
+      <div id="embed-wrap" class="vid hidden" style="margin-top:9px;"><iframe id="source-frame" title="Video source" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="no-referrer"></iframe></div>
+      <p id="player-msg" style="margin:7px 0 0;">Choose an episode, add one or more authorised sources, then tap a server button to play. Sources are saved separately for each episode on this device.</p>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;">
+        <button id="forget-source" class="plus-btn" type="button">Remove this episode's video</button>
+        <button id="resume-video" class="plus-btn" type="button">Resume</button>
+      </div>
+    </div>
+    <button id="m-save" class="btn"></button>
+    <div id="m-eps" class="ep-grid"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<script>
+const API = 'https://' + 'api.jikan.moe/v4';
+const DB_NAME = 'KumoPlayMedia';
+const DB_STORE = 'episodeMedia';
+const SOURCE_STORE = 'episodeSources';
+let dbPromise = null;
+function openMediaDB() {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise(function(resolve, reject) {
+    const req = indexedDB.open(DB_NAME, 2);
+    req.onupgradeneeded = function() { const db = req.result; if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE, { keyPath: 'key' }); if (!db.objectStoreNames.contains(SOURCE_STORE)) db.createObjectStore(SOURCE_STORE, { keyPath: 'key' }); };
+    req.onsuccess = function() { resolve(req.result); };
+    req.onerror = function() { reject(req.error); };
+  });
+  return dbPromise;
+}
+async function mediaGet(key) { const db = await openMediaDB(); return new Promise((resolve,reject) => { const r=db.transaction(DB_STORE).objectStore(DB_STORE).get(key); r.onsuccess=()=>resolve(r.result||null); r.onerror=()=>reject(r.error); }); }
+async function mediaPut(record) { const db=await openMediaDB(); return new Promise((resolve,reject)=>{ const r=db.transaction(DB_STORE,'readwrite').objectStore(DB_STORE).put(record); r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error); }); }
+async function mediaDelete(key) { const db=await openMediaDB(); return new Promise((resolve,reject)=>{ const r=db.transaction(DB_STORE,'readwrite').objectStore(DB_STORE).delete(key); r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error); }); }
+async function sourcesGet(key) { const db=await openMediaDB(); return new Promise((resolve,reject)=>{ const r=db.transaction(SOURCE_STORE).objectStore(SOURCE_STORE).get(key); r.onsuccess=()=>resolve(r.result ? r.result.sources : []); r.onerror=()=>reject(r.error); }); }
+async function sourcesPut(key, sources) { const db=await openMediaDB(); return new Promise((resolve,reject)=>{ const r=db.transaction(SOURCE_STORE,'readwrite').objectStore(SOURCE_STORE).put({key:key,sources:sources}); r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error); }); }
+function mediaKey() { return cur.mal_id + ':' + (curEp || 1); }
+let curEp = 1;
+let resumeAt = 0;
+let saveProgressTimer = null;
+let view = 'home';
+let items = [];
+let saved = JSON.parse(localStorage.getItem('ac_mobile') || '[]');
+let cur = null;
+
+function syncCount() {
+  document.getElementById('cnt').textContent = saved.length;
+  localStorage.setItem('ac_mobile', JSON.stringify(saved));
+  renderContinueWatching();
+}
+
+function renderContinueWatching() {
+  const sec = document.getElementById('cw-section');
+  const row = document.getElementById('cw-row');
+  const active = saved.filter(function(x) {
+    return !x.episodes || (x.ep || 0) < x.episodes;
+  });
+
+  if (view !== 'home' || !active.length) {
+    sec.classList.add('hidden');
+    return;
+  }
+
+  sec.classList.remove('hidden');
+  row.innerHTML = '';
+
+  active.forEach(function(a) {
+    const card = document.createElement('div');
+    card.className = 'cw-card';
+    card.onclick = function() { openM(a); };
+
+const img = document.createElement('img');
+img.src = (a.images && a.images.jpg) ? a.images.jpg.image_url : '';
+const info = document.createElement('div');
+info.className = 'cw-info';
+const title = document.createElement('div');
+title.className = 'cw-title';
+title.textContent = a.title_english || a.title;
+const currentEp = a.ep || 0;
+const totalEp = a.episodes || '?';
+const sub = document.createElement('div');
+sub.className = 'cw-sub';
+sub.textContent = 'EP ' + currentEp + ' / ' + totalEp;
+const progBg = document.createElement('div');
+progBg.className = 'prog-bg';
+const progFill = document.createElement('div');
+progFill.className = 'prog-fill';
+const pct = a.episodes ? Math.min(100, Math.round((currentEp / a.episodes) * 100)) : 35;
+progFill.style.width = pct + '%';
+progBg.appendChild(progFill);
+const plusBtn = document.createElement('button');
+plusBtn.className = 'plus-btn';
+plusBtn.textContent = '+1 Ep';
+plusBtn.onclick = function(e) {
+e.stopPropagation();
+a.ep = currentEp + 1;
+syncCount();
+render(view === 'list' ? saved : items);
+};
+info.appendChild(title);
+info.appendChild(sub);
+info.appendChild(progBg);
+info.appendChild(plusBtn);
+card.appendChild(img);
+card.appendChild(info);
+row.appendChild(card);
+});
+}
+function setChip(boxId, el) {
+if (!el) return;
+document.querySelectorAll('#' + boxId + ' .chip').forEach(function(c) { c.classList.remove('active'); });
+el.classList.add('active');
+}
+function go(v) {
+view = v;
+['home', 'sched', 'list'].forEach(function(id) {
+document.getElementById('n-' + id).classList.toggle('active', id === v);
+});
+document.getElementById('chips').classList.toggle('hidden', v !== 'home');
+document.getElementById('days').classList.toggle('hidden', v !== 'sched');
+document.getElementById('hero').classList.toggle('hidden', v !== 'home' || !items.length);
+renderContinueWatching();
+if (v === 'home') loadList('/top/anime?filter=airing&limit=24', 'Trending');
+if (v === 'sched') loadSched('monday', document.querySelector('#days .chip'));
+if (v === 'list') {
+document.getElementById('msg').textContent = 'My Saved Watchlist';
+render(saved);
+}
+}
+const localAnime = [
+ {mal_id:'local-1',title:'Naruto',title_english:'Naruto',type:'TV',episodes:220,score:8.0,synopsis:'A young ninja dreams of becoming the strongest leader in his village.'},
+ {mal_id:'local-2',title:'One Piece',title_english:'One Piece',type:'TV',episodes:null,score:9.0,synopsis:'A crew of pirates sets sail in search of the legendary One Piece treasure.'},
+ {mal_id:'local-3',title:'Kimetsu no Yaiba',title_english:'Demon Slayer: Kimetsu no Yaiba',type:'TV',episodes:26,score:8.5,synopsis:'Tanjiro joins the Demon Slayer Corps after tragedy strikes his family.'},
+ {mal_id:'local-4',title:'Jujutsu Kaisen',title_english:'Jujutsu Kaisen',type:'TV',episodes:24,score:8.6,synopsis:'A teenager enters the dangerous world of cursed spirits and sorcerers.'},
+ {mal_id:'local-5',title:'Shingeki no Kyojin',title_english:'Attack on Titan',type:'TV',episodes:25,score:8.5,synopsis:'Humanity fights for survival behind enormous walls.'},
+ {mal_id:'local-6',title:'Boku no Hero Academia',title_english:'My Hero Academia',type:'TV',episodes:13,score:7.9,synopsis:'A boy born without powers works towards becoming a great hero.'},
+ {mal_id:'local-7',title:'Death Note',title_english:'Death Note',type:'TV',episodes:37,score:8.6,synopsis:'A student discovers a notebook that can kill anyone whose name is written in it.'},
+ {mal_id:'local-8',title:'Spy x Family',title_english:'Spy x Family',type:'TV',episodes:25,score:8.4,synopsis:'A spy, an assassin and a telepath pretend to be an ordinary family.'},
+ {mal_id:'local-9',title:'Haikyuu!!',title_english:'Haikyu!!',type:'TV',episodes:25,score:8.4,synopsis:'A determined volleyball player chases his dream of reaching the top.'},
+ {mal_id:'local-10',title:'Chainsaw Man',title_english:'Chainsaw Man',type:'TV',episodes:12,score:8.4,synopsis:'A young devil hunter gains terrifying powers after a life-changing deal.'},
+ {mal_id:'local-11',title:'Fullmetal Alchemist: Brotherhood',title_english:'Fullmetal Alchemist: Brotherhood',type:'TV',episodes:64,score:9.1,synopsis:'Two brothers search for the Philosopher’s Stone to restore what they lost.'},
+ {mal_id:'local-12',title:'Blue Lock',title_english:'Blue Lock',type:'TV',episodes:24,score:8.2,synopsis:'Strikers compete in an intense programme to create Japan’s ultimate forward.'},
+ {mal_id:'local-13',title:'Sousou no Frieren',title_english:'Frieren: Beyond Journey’s End',type:'TV',episodes:28,score:9.3,synopsis:'An elven mage reflects on friendship and time after the hero’s journey ends.'},
+ {mal_id:'local-14',title:'Oshi no Ko',title_english:'【Oshi No Ko】',type:'TV',episodes:11,score:8.5,synopsis:'A doctor is reborn into the world of entertainment and its hidden secrets.'},
+ {mal_id:'local-15',title:'Bocchi the Rock!',title_english:'Bocchi the Rock!',type:'TV',episodes:12,score:8.7,synopsis:'A shy guitarist finds confidence after joining a school rock band.'},
+ {mal_id:'local-16',title:'Mob Psycho 100',title_english:'Mob Psycho 100',type:'TV',episodes:12,score:8.5,synopsis:'A quiet student with powerful psychic abilities tries to live a normal life.'},
+ {mal_id:'local-17',title:'Hunter x Hunter',title_english:'Hunter x Hunter',type:'TV',episodes:148,score:9.0,synopsis:'A young boy sets out to become a Hunter and find his father.'},
+ {mal_id:'local-18',title:'Steins;Gate',title_english:'Steins;Gate',type:'TV',episodes:24,score:9.0,synopsis:'A group of friends discover a way to send messages into the past.'},
+ {mal_id:'local-19',title:'Vinland Saga',title_english:'Vinland Saga',type:'TV',episodes:24,score:8.7,synopsis:'A young warrior is drawn into a brutal age of Vikings.'},
+ {mal_id:'local-20',title:'Tokyo Revengers',title_english:'Tokyo Revengers',type:'TV',episodes:24,score:7.9,synopsis:'A man gets a chance to change the past and save the people he loves.'},
+ {mal_id:'local-21',title:'Kaguya-sama wa Kokurasetai',title_english:'Kaguya-sama: Love Is War',type:'TV',episodes:12,score:8.4,synopsis:'Two clever students wage a battle of wits over who will confess first.'},
+ {mal_id:'local-22',title:'Re:Zero kara Hajimeru Isekai Seikatsu',title_english:'Re:ZERO -Starting Life in Another World-',type:'TV',episodes:25,score:8.2,synopsis:'A young man discovers he returns to a previous point whenever he dies.'},
+ {mal_id:'local-23',title:'Dr. Stone',title_english:'Dr. Stone',type:'TV',episodes:24,score:8.1,synopsis:'A science-minded teenager tries to rebuild civilisation after humanity is petrified.'},
+ {mal_id:'local-24',title:'The Promised Neverland',title_english:'The Promised Neverland',type:'TV',episodes:12,score:8.5,synopsis:'Children uncover a dark secret about the orphanage they call home.'}
+];
+let pageOffset = 0;
+let currentQuery = '';
+let currentLabel = 'Trending';
+let currentPath = '/top/anime?filter=airing&limit=24';
+function normalizeKitsu(entry) {
+ const a = entry.attributes || {};
+ const poster = a.posterImage || {};
+ const titles = a.titles || {};
+ return {
+   mal_id:'kitsu-' + entry.id,
+   kitsu_id:entry.id,
+   title:a.canonicalTitle || titles.en_jp || titles.en || 'Untitled anime',
+   title_english:titles.en || titles.en_jp || a.canonicalTitle || 'Untitled anime',
+   type:(a.subtype || 'TV').toUpperCase(),
+   episodes:a.episodeCount || null,
+   score:a.averageRating ? Number(a.averageRating)/10 : null,
+   synopsis:a.synopsis || '',
+   images:{jpg:{large_image_url:poster.large || poster.original || poster.medium || ''}},
+   trailer:null
+ };
+}
+function fallbackList(path) {
+ const q = (document.getElementById('q').value || '').trim().toLowerCase();
+ if (q) return localAnime.filter(a => (a.title+' '+a.title_english).toLowerCase().includes(q));
+ if (path.indexOf('genres=1')>=0) return localAnime.filter(a=>/Jujutsu|Attack|Demon|Chainsaw|Naruto|Hunter|Tokyo Revengers/i.test(a.title_english));
+ if (path.indexOf('genres=10')>=0) return localAnime.filter(a=>/Frieren|Fullmetal|One Piece|Demon|Re:ZERO/i.test(a.title_english));
+ if (path.indexOf('genres=22')>=0) return localAnime.filter(a=>/Kaguya|Spy x Family|Oshi/i.test(a.title_english));
+ return localAnime.slice();
+}
+function kitsuUrl(path, offset) {
+ const params = new URLSearchParams();
+ params.set('page[limit]','20');
+ params.set('page[offset]',String(offset || 0));
+ if (path.indexOf('/anime?q=')===0) {
+   const q = new URLSearchParams(path.split('?')[1] || '').get('q') || '';
+   params.set('filter[text]',q);
+   params.set('sort','-userCount');
+ } else if (path.indexOf('/seasons/now')===0 || path.indexOf('/schedules')===0) {
+   params.set('filter[status]','current');
+   params.set('sort','-startDate');
+ } else if (path.indexOf('genres=1')>=0) {
+   params.set('filter[categories]','action');
+   params.set('sort','-userCount');
+ } else if (path.indexOf('genres=10')>=0) {
+   params.set('filter[categories]','fantasy');
+   params.set('sort','-userCount');
+ } else if (path.indexOf('genres=22')>=0) {
+   params.set('filter[categories]','romance');
+   params.set('sort','-userCount');
+ } else {
+   params.set('sort','-userCount');
+ }
+ return 'https://kitsu.io/api/edge/anime?' + params.toString();
+}
+async function loadMoreAnime() {
+ pageOffset += 20;
+ await loadList(currentPath,currentLabel,null,true);
+}
+async function loadList(path, label, el, append) {
+ setChip('chips',el);
+ const msg=document.getElementById('msg'), notice=document.getElementById('notice');
+ if (!append) { pageOffset=0; currentPath=path; currentLabel=label; }
+ msg.textContent='Loading '+label+'...'; notice.classList.add('hidden');
+ try {
+  const url=kitsuUrl(path,pageOffset);
+  const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),12000);
+  const r=await fetch(url,{signal:controller.signal,headers:{'Accept':'application/vnd.api+json'}});
+  clearTimeout(timer);
+  if(!r.ok) throw new Error('Anime catalogue returned '+r.status);
+  const d=await r.json();
+  if(!Array.isArray(d.data)) throw new Error('Unexpected catalogue response');
+  const results=d.data.map(normalizeKitsu);
+  if(append) items=items.concat(results); else items=results;
+  msg.textContent=label+' · '+items.length+' titles';
+  document.getElementById('load-more').classList.toggle('hidden',results.length<20);
+ } catch(e) {
+  if(!append) items=fallbackList(path);
+  msg.textContent=label+' · '+(append?'could not load more':'offline catalogue');
+  document.getElementById('load-more').classList.add('hidden');
+  notice.textContent='The live catalogue could not be reached. Showing the larger built-in list instead. Connect to the internet and tap a category or search again to load thousands more titles and their real poster artwork.';
+  notice.classList.remove('hidden');
+ }
+ if(view==='home' && items.length) {
+  const top=items[0], heroImg=document.getElementById('h-img');
+  const heroUrl=top.images&&top.images.jpg?(top.images.jpg.large_image_url||top.images.jpg.image_url||''):'';
+  heroImg.style.display=heroUrl?'block':'none'; heroImg.onerror=function(){heroImg.style.display='none';}; heroImg.src=heroUrl;
+  document.getElementById('h-title').textContent=top.title_english||top.title;
+  document.getElementById('h-desc').textContent=top.synopsis||'';
+  document.getElementById('h-btn').onclick=function(){openM(top);};
+  document.getElementById('hero').classList.remove('hidden');
+ }
+ render(items);
+}
+function loadSched(day, el) {
+setChip('days', el);
+loadList('/schedules?filter=' + day + '&limit=24', day.toUpperCase() + ' Schedule');
+}
+function searchGo(e) {
+e.preventDefault();
+const q = document.getElementById('q').value.trim();
+if (!q) return go('home');
+document.getElementById('q').blur();
+document.getElementById('hero').classList.add('hidden');
+document.getElementById('cw-section').classList.add('hidden');
+loadList('/anime?q=' + encodeURIComponent(q) + '&limit=24&sfw=true', 'Search: ' + q);
+}
+function render(arr) {
+const g = document.getElementById('grid');
+g.innerHTML = '';
+if (!arr.length) {
+const empty = document.createElement('p');
+empty.style.color = '#9ca3af';
+empty.textContent = 'Nothing here yet.';
+g.appendChild(empty);
+return;
+}
+arr.forEach(function(a) {
+const found = saved.find(function(x) { return x.mal_id === a.mal_id; });
+const imgUrl = (a.images && a.images.jpg) ? (a.images.jpg.large_image_url || a.images.jpg.image_url || '') : '';
+const card = document.createElement('div');
+card.className = 'card';
+card.onclick = function() { openM(a); };
+const poster = document.createElement('div');
+poster.className = 'poster';
+if (imgUrl) {
+ const img=document.createElement('img'); img.src=imgUrl; img.alt=(a.title_english||a.title)+' poster'; img.loading='lazy';
+ img.onerror=function(){img.remove();poster.classList.add('fallback-poster');const t=document.createElement('strong');t.textContent=a.title_english||a.title;poster.insertBefore(t,poster.firstChild);};
+ poster.appendChild(img);
+} else { poster.classList.add('fallback-poster'); const t=document.createElement('strong'); t.textContent=a.title_english||a.title; poster.appendChild(t); }
+const typeBadge = document.createElement('span');
+typeBadge.className = 'badge b-tl';
+typeBadge.textContent = a.type || 'TV';
+const topBadge = document.createElement('span');
+topBadge.className = 'badge b-top';
+topBadge.textContent = '★ ' + (a.score || 'N/A');
+const botRow = document.createElement('div');
+botRow.className = 'b-row';
+const epPill = document.createElement('span');
+epPill.className = 'pill p-sub';
+epPill.textContent = (a.episodes || '?') + ' EPS';
+botRow.appendChild(epPill);
+if (found) {
+const epPill = document.createElement('span');
+epPill.className = 'pill p-ep';
+epPill.textContent = 'EP ' + (found.ep || 0);
+botRow.appendChild(epPill);
+}
+poster.appendChild(typeBadge);
+poster.appendChild(topBadge);
+poster.appendChild(botRow);
+const body = document.createElement('div');
+body.className = 'c-body';
+const title = document.createElement('div');
+title.className = 'c-title';
+title.textContent = a.title_english || a.title;
+body.appendChild(title);
+card.appendChild(poster);
+card.appendChild(body);
+g.appendChild(card);
+});
+}
+let activeObjectUrl = null;
+let activeHls = null;
+function resetEpisodePlayer() {
+  const player = document.getElementById('episode-player');
+  player.pause();
+  player.removeAttribute('src'); player.load(); player.classList.add('hidden');
+  if (activeHls) { activeHls.destroy(); activeHls = null; }
+  document.getElementById('embed-wrap').classList.add('hidden');
+  document.getElementById('source-frame').src = '';
+  if (activeObjectUrl) { URL.revokeObjectURL(activeObjectUrl); activeObjectUrl = null; }
+  document.getElementById('video-file').value = '';
+  document.getElementById('video-url').value = '';
+}
+async function drawSources() {
+  const box = document.getElementById('source-list'); box.innerHTML = '';
+  let sources = [];
+  try { sources = await sourcesGet(mediaKey()); } catch(e) {}
+  if (!sources.length) { const note=document.createElement('span'); note.className='streaming-status'; note.textContent='No servers added for this episode yet.'; box.appendChild(note); return; }
+  sources.forEach(function(source, index) {
+    const wrap=document.createElement('div'); wrap.style.display='flex'; wrap.style.gap='4px';
+    const play=document.createElement('button'); play.className='plus-btn'; play.textContent=source.name || ('Server '+(index+1)); play.onclick=()=>playSavedSource(source);
+    const del=document.createElement('button'); del.className='plus-btn'; del.textContent='×'; del.title='Remove source'; del.onclick=async()=>{ sources.splice(index,1); await sourcesPut(mediaKey(),sources); drawSources(); };
+    wrap.appendChild(play); wrap.appendChild(del); box.appendChild(wrap);
+  });
+}
+async function playSavedSource(source) {
+  resetEpisodePlayer();
+  const msg=document.getElementById('player-msg');
+  if (source.type === 'embed') {
+    document.getElementById('source-frame').src=source.url;
+    document.getElementById('embed-wrap').classList.remove('hidden');
+    msg.textContent='Opening permitted embedded source inside KumoPlay. If the provider blocks embedding, it will not play here.';
+    return;
+  }
+  const player=document.getElementById('episode-player'); player.classList.remove('hidden');
+  if (source.type === 'hls') {
+    if (player.canPlayType('application/vnd.apple.mpegurl')) player.src=source.url;
+    else if (window.Hls && Hls.isSupported()) { activeHls=new Hls(); activeHls.loadSource(source.url); activeHls.attachMedia(player); }
+    else { msg.textContent='This browser cannot play HLS streams. Try a compatible browser or an MP4/WebM source.'; return; }
+  } else player.src=source.url;
+  player.load();
+  player.play().then(()=>msg.textContent='Playing '+(source.name || 'source')+' inside KumoPlay.').catch(()=>msg.textContent='Source loaded. Press play. The host must allow playback and cross-origin access.');
+}
+async function addEpisodeSource() {
+  const nameInput=document.getElementById('source-name'), urlInput=document.getElementById('source-url');
+  const name=nameInput.value.trim() || 'Server'; const url=urlInput.value.trim(); const type=document.getElementById('source-type').value;
+  try {
+    const parsed=new URL(url); if (!['https:','http:'].includes(parsed.protocol)) throw new Error('bad url');
+    if (type==='media' && !/\.(mp4|webm|ogv)(\?|#|$)/i.test(parsed.pathname+parsed.search+parsed.hash)) throw new Error('Use a direct .mp4, .webm or .ogv link, or choose HLS/embed.');
+    if (type==='hls' && !/\.m3u8(\?|#|$)/i.test(parsed.pathname+parsed.search+parsed.hash)) throw new Error('HLS links usually end in .m3u8.');
+    const sources=await sourcesGet(mediaKey()); sources.push({name:name,url:parsed.href,type:type}); await sourcesPut(mediaKey(),sources);
+    nameInput.value=''; urlInput.value=''; document.getElementById('player-msg').textContent='Added '+name+'. Select its server button above to play.'; drawSources();
+  } catch(err) { document.getElementById('player-msg').textContent=err.message==='bad url'?'Enter a valid http:// or https:// source URL.':err.message; }
+}
+function renderProviderLinks() {
+  const box = document.getElementById('provider-links');
+  if (!box || !cur) return;
+  box.innerHTML = '';
+  const title = cur.title_english || cur.title || '';
+  const q = encodeURIComponent(title);
+  const links = [
+    ['Tubi UK · Free anime', 'https://tubitv.com/en-gb/category/anime'],
+    ['Tubi UK · Anime TV', 'https://tubitv.com/en-gb/category/tv/anime'],
+    ['VIZ Media · Official YouTube', 'https://www.youtube.com/@VIZMedia'],
+    ['GUNDAM Channel INTL', 'https://www.youtube.com/@GundamInfo'],
+    ['Search official episode uploads', 'https://www.youtube.com/results?search_query=' + encodeURIComponent(title + ' full episodes official anime distributor')]
+  ];
+  links.forEach(function(item) {
+    const link = document.createElement('a');
+    link.href = item[1];
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = item[0];
+    box.appendChild(link);
+  });
+}
+
+function openM(a) {
+  cur = a;
+  const title = a.title_english || a.title;
+  document.getElementById('m-title').textContent = title;
+  document.getElementById('m-desc').textContent = a.synopsis || 'No synopsis.';
+  const v = document.getElementById('m-vid');
+  const f = document.getElementById('m-frame');
+  if (a.trailer && a.trailer.embed_url) {
+    f.src = a.trailer.embed_url;
+    v.classList.remove('hidden');
+  } else {
+    f.src = '';
+    v.classList.add('hidden');
+  }
+  resetEpisodePlayer();
+  const savedEntry = saved.find(function(x) { return x.mal_id === a.mal_id; });
+  curEp = savedEntry && savedEntry.ep ? savedEntry.ep : 1;
+  renderProviderLinks();
+  resumeAt = 0;
+  document.getElementById('player-msg').textContent = 'Select an episode, then choose a video file or paste a direct video link.';
+  drawModal();
+  loadEpisodeMedia();
+  drawSources();
+  document.getElementById('modal').classList.remove('hidden');
+}
+function drawModal() {
+const found = saved.find(function(x) { return x.mal_id === cur.mal_id; });
+const btn = document.getElementById('m-save');
+btn.textContent = found ? '✓ In My List (Remove)' : '+ Add to My List';
+btn.onclick = function() {
+const i = saved.findIndex(function(x) { return x.mal_id === cur.mal_id; });
+if (i > -1) saved.splice(i, 1);
+else saved.unshift(Object.assign({}, cur, { ep: 0 }));
+syncCount();
+drawModal();
+render(view === 'list' ? saved : items);
+};
+const total = Math.min(cur.episodes || 24, 100);
+const done = found ? (found.ep || 0) : 0;
+const epsBox = document.getElementById('m-eps');
+epsBox.innerHTML = '';
+for (let n = 1; n <= total; n++) {
+(function(epNum) {
+const epBtn = document.createElement('button');
+epBtn.className = epNum <= done ? 'ep-btn done' : 'ep-btn';
+epBtn.textContent = epNum;
+epBtn.onclick = function() { setEp(epNum); };
+epsBox.appendChild(epBtn);
+})(n);
+}
+}
+function setEp(n) {
+curEp = n;
+renderProviderLinks();
+let found = saved.find(function(x) { return x.mal_id === cur.mal_id; });
+if (!found) { found = Object.assign({}, cur, { ep: n }); saved.unshift(found); }
+else { found.ep = n; }
+syncCount();
+drawModal();
+resetEpisodePlayer();
+loadEpisodeMedia();
+render(view === 'list' ? saved : items);
+}
+function closeM() {
+  document.getElementById('m-frame').src = '';
+  resetEpisodePlayer();
+  document.getElementById('modal').classList.add('hidden');
+}
+
+function playEpisodeSource(src, label) {
+  const player = document.getElementById('episode-player');
+  const msg = document.getElementById('player-msg');
+  if (activeHls) { activeHls.destroy(); activeHls = null; }
+  document.getElementById('embed-wrap').classList.add('hidden');
+  player.src = src;
+  player.classList.remove('hidden');
+  player.load();
+  player.play().then(function() {
+    msg.textContent = 'Now playing inside KumoPlay: ' + label;
+  }).catch(function() {
+    msg.textContent = 'Video loaded. Press play. Direct links must point to an actual MP4/WebM media file; streaming pages and DRM-protected services cannot be played here.';
+  });
+}
+async function loadEpisodeMedia() {
+  try {
+    const record = await mediaGet(mediaKey());
+    if (!record) { document.getElementById('player-msg').textContent = 'No video saved for episode ' + curEp + ' yet. Add a file or direct video link below.'; return; }
+    resumeAt = record.time || 0;
+    if (record.type === 'file') {
+      activeObjectUrl = URL.createObjectURL(record.blob);
+      playEpisodeSource(activeObjectUrl, record.name || 'saved video');
+    } else if (record.type === 'url') {
+      document.getElementById('video-url').value = record.url;
+      playEpisodeSource(record.url, 'saved video link');
+    }
+    document.getElementById('player-msg').textContent = 'Saved source loaded for episode ' + curEp + '. Your playback position is remembered in this browser.';
+  } catch (err) {
+    document.getElementById('player-msg').textContent = 'Could not access saved media. Your browser may not support local media storage.';
+  }
+}
+
+const playerEl = document.getElementById('episode-player');
+playerEl.addEventListener('loadedmetadata', function() {
+  if (resumeAt > 2 && resumeAt < playerEl.duration - 2) playerEl.currentTime = resumeAt;
+  resumeAt = 0;
+});
+playerEl.addEventListener('timeupdate', function() {
+  if (saveProgressTimer) return;
+  saveProgressTimer = setTimeout(async function() {
+    saveProgressTimer = null;
+    try { const rec = await mediaGet(mediaKey()); if (rec) { rec.time = playerEl.currentTime || 0; await mediaPut(rec); } } catch(e) {}
+  }, 4000);
+});
+
+document.getElementById('add-source').addEventListener('click', addEpisodeSource);
+document.getElementById('resume-video').addEventListener('click', function() {
+  if (playerEl.classList.contains('hidden')) loadEpisodeMedia();
+  else playerEl.play().catch(function() { document.getElementById('player-msg').textContent = 'Press play on the video controls to resume.'; });
+});
+document.getElementById('forget-source').addEventListener('click', async function() {
+  try { await mediaDelete(mediaKey()); resetEpisodePlayer(); document.getElementById('player-msg').textContent = 'Removed the saved video for episode ' + curEp + '.'; }
+  catch(e) { document.getElementById('player-msg').textContent = 'Could not remove this saved video.'; }
+});
+
+document.getElementById('video-file').addEventListener('change', async function() {
+  const file = this.files && this.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('video/')) {
+    document.getElementById('player-msg').textContent = 'Please choose a video file.';
+    return;
+  }
+  try { await mediaPut({ key: mediaKey(), type: 'file', blob: file, name: file.name, time: 0 }); }
+  catch(e) { document.getElementById('player-msg').textContent = 'This browser could not save the file. It may still play for this session.'; }
+  if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
+  activeObjectUrl = URL.createObjectURL(file);
+  resumeAt = 0;
+  playEpisodeSource(activeObjectUrl, file.name);
+});
+document.getElementById('play-url').addEventListener('click', async function() {
+  const input = document.getElementById('video-url');
+  const url = input.value.trim();
+  const msg = document.getElementById('player-msg');
+  if (!url) {
+    msg.textContent = 'Paste a direct video URL first.';
+    return;
+  }
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') throw new Error('Invalid protocol');
+    resetEpisodePlayer();
+    input.value = parsed.href;
+    await mediaPut({ key: mediaKey(), type: 'url', url: parsed.href, time: 0 });
+    resumeAt = 0;
+    playEpisodeSource(parsed.href, 'video link');
+  } catch (e) {
+    msg.textContent = 'That link is not valid. Use a full http:// or https:// direct video URL.';
+  }
+});
+
+syncCount();
+if (!('indexedDB' in window)) document.getElementById('player-msg').textContent = 'This browser does not support persistent video storage. You can still try playing a file for this session.';
+go('home');
+</script>
+</body>
+</html>
